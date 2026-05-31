@@ -7,5 +7,7 @@
             <a href="{% url 'IESys_:ie' %}">返回收支页面</a>
         </p>
         {{fig|safe}}
+    {% else %}
+        <p>今日还没有任何收入哦！</p>
     {% endif %}
 {% endblock context %}

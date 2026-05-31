@@ -2,4 +2,10 @@
 
 {% block context %}
     <p>这是统计页面</p>
+    <p>
+        <a href="{% url 'IESys_:week_expenditure' %}">周支出统计</a>
+    </p>
+    <p>
+        <a href="{% url 'IESys_:month_ie' %}">月收支统计</a>
+    </p>
 {% endblock context %}

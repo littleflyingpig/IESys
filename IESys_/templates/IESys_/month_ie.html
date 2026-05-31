@@ -1,0 +1,9 @@
+{% extends 'IESys_/base.html' %}
+
+{% block context %}
+    <p>这是月收支统计页面</p>
+    {{ fig|safe }}
+    <p>
+        <a href="{% url 'IESys_:sta' %}">返回统计页面</a>
+    </p>
+{% endblock context %}
