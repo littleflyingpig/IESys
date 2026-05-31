@@ -2,6 +2,24 @@
 
 {% block context %}
     <p>这是支出页面</p>
+
+    {% if form.errors %}
+        <div id='error-msg' style="color: red; margin-top: 5px;">
+            {% for error in form.expenditure_amount.errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+
+        <script>
+            setTimeout(function() {
+                var msg = document.getElementById('error-msg');
+                if (msg) {
+                    msg.style.display = 'none';
+                }
+            }, 3000);
+        </script>
+    {% endif %}
+
     <form action="{% url 'IESys_:expenditure' %}" method="POST">
         {% csrf_token %}
 
@@ -18,8 +36,9 @@
         {{ form.expenditure_amount }}
         <button name="submit">提交</button>
     </form>
-    <p><a href="{% url 'IESys_:ie' %}">返回收支页面</a></p>
 
+    <p><a href="{% url 'IESys_:ie' %}">返回收支页面</a></p>
+    
     {% if messages %}
         {% for message in messages %}
             <div id="msg" style="color: green; padding: 10px; border: 1px solid green; margin-bottom: 15px;">

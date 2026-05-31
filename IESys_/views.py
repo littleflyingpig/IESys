@@ -27,11 +27,9 @@ def income(request):
     else:
         form = IeSysForm(data=request.POST)
         if form.is_valid():
-            print("表单是合理的")
             form.save()
             messages.success(request, '支出添加成功！')
             return redirect('IESys_:income')
-        print("表单是不合理的")
     context = {'form': form}
     return render(request, 'IESys_/income.html', context)
 
