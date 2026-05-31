@@ -5,23 +5,33 @@ from django.utils import timezone
 from .form import IeSysForm
 from .models import IeSys
 
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import calendar
 import pandas as pd
 import plotly.express as px
 # Create your views here.
 
+def get_day_range(target_date):
+    """获取某一天的开始和结束时间"""
+    start = datetime(target_date.year, target_date.month, target_date.day, 0, 0, 0)
+    end = datetime(target_date.year, target_date.month, target_date.day, 23, 59, 59)
+    return start, end
+
+
 def index(request):
     """编写收支系统的主页视图"""
     return render(request, 'IESys_/index.html')
+
 
 def ie(request):
     """编写主页中跳转收支页面的视图"""
     return render(request, 'IESys_/ie.html')
 
+
 def sta(request):
     """编写主页中统计页面的视图"""
     return render(request, 'IESys_/sta.html')
+
 
 def income(request):
     """编写收支页面的收入的视图"""
@@ -36,6 +46,7 @@ def income(request):
     context = {'form': form}
     return render(request, 'IESys_/income.html', context)
 
+
 def expenditure(request):
     """"编写支出页面的支出视图"""
     if request.method != "POST":
@@ -49,44 +60,76 @@ def expenditure(request):
     context = {'form': form}
     return render(request, 'IESys_/expenditure.html', context)
 
+
 def income_detail(request):
     """编写收入的详细页面视图"""
     today = timezone.now().date()
-    objects = IeSys.objects.filter(date=today)
+    start, end = get_day_range(today)
+    objects = IeSys.objects.filter(date__gte=start, date__lte=end)
     if objects:
         data = {}
-        for object in objects:
-            income = object.income
-            amount = object.income_amount
-            if amount:
-                data[income] = data.get(income, 0) + amount
-        fig = px.pie(values=data.values(), names=data.keys(), title='收入构成')
+        ic = []
+        ac = []
+        tc = []
+        total_amount = 0  # 添加总金额变量
+        for obj in objects:
+            income = obj.income
+            amount = obj.income_amount
+            time = obj.date
+
+            if not amount or amount == 0:
+                continue
+
+            ic.append(income)
+            ac.append(amount)
+            tc.append(time)
+            data[income] = data.get(income, 0) + amount
+            total_amount += amount  # 累加总金额
+        
+        fig = px.pie(values=list(data.values()), names=list(data.keys()), title='收入构成')
         fig = fig.to_html(full_html=False)
-        context = {'flag': 1, 'fig': fig}
+        combined = zip(ic, ac, tc)
+        context = {'flag': 1, 'fig': fig, 'combined': combined, 'total_amount': total_amount}
         return render(request, 'IESys_/income_detail.html', context)
     else:
         context = {'flag': 0}
         return render(request, 'IESys_/income_detail.html', context)
     
+
 def expenditure_detail(request):
-    """"编写收入的详细页面视图"""
+    """"编写支出的详细页面视图"""
     today = timezone.now().date()
-    objects = IeSys.objects.filter(date=today)
+    start, end = get_day_range(today)
+    objects = IeSys.objects.filter(date__gte=start, date__lte=end)
     if objects:
         data = {}
-        for object in objects:
-            expenditure = object.expenditure
-            amount = object.expenditure_amount
-            if amount:
-                data[expenditure] = data.get(expenditure, 0) + amount
-        fig = px.pie(values=data.values(), names=data.keys(), title='支出构成')
+        ed = []
+        ad = []
+        td = []
+        total_amount = 0  # 添加总金额变量
+        for obj in objects:
+            expenditure = obj.expenditure
+            amount = obj.expenditure_amount
+            time = obj.date
+
+            if not amount or amount == 0:
+                continue
+
+            ed.append(expenditure)
+            ad.append(amount)
+            td.append(time)
+            data[expenditure] = data.get(expenditure, 0) + amount
+            total_amount += amount  # 累加总金额
+        
+        fig = px.pie(values=list(data.values()), names=list(data.keys()), title='支出构成')
         fig = fig.to_html(full_html=False)
-        context = {'flag': 1, 'fig': fig}
+        combined = zip(ed, ad, td)
+        context = {'flag': 1, 'fig': fig, 'combined': combined, 'total_amount': total_amount}
         return render(request, 'IESys_/expenditure_detail.html', context)
     else:
         context = {'flag': 0}
         return render(request, 'IESys_/expenditure_detail.html', context)
-    
+
 def week_expenditure(request):
     """编写统计页面中的周统计"""
     today = date.today()
@@ -94,16 +137,18 @@ def week_expenditure(request):
     sunday = monday + timedelta(days=6)
     week = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
     amount = []
-    while monday <= sunday:
-        objects = IeSys.objects.filter(date=monday)
-        if not objects:
-            amount.append(0)
-        else:
-            total = 0
-            for object in objects:
-                total += object.expenditure_amount
-            amount.append(total)
-        monday += timedelta(days=1)
+    
+    current = monday
+    while current <= sunday:
+        start, end = get_day_range(current)
+        objects = IeSys.objects.filter(date__gte=start, date__lte=end)
+        
+        total = 0
+        for obj in objects:
+            total += obj.expenditure_amount or 0
+        amount.append(total)
+        current += timedelta(days=1)
+    
     df = pd.DataFrame({
         '本周': week,
         '支出': amount
@@ -113,6 +158,7 @@ def week_expenditure(request):
     context = {'fig': fig}
     return render(request, 'IESys_/week_expenditure.html', context)
 
+
 def month_ie(request):
     """编写统计页面中的月收支"""
     today = date.today()
@@ -120,25 +166,22 @@ def month_ie(request):
     first_day = date(today.year, today.month, 1)
     days = []
     amount = []
+    cumulative = 0
+    
     for i in range(total_days):
-        cnt = first_day + timedelta(days=i)
+        current_date = first_day + timedelta(days=i)
+        days.append(str(current_date.day))
         
-        days.append(str(cnt.day))
-        objects = IeSys.objects.filter(date=cnt)
-        if objects:
-            total = 0
-            for object in objects:
-                total += object.income_amount - object.expenditure_amount
-            if i == 0:
-                amount.append(total)
-            else:
-                total += amount[i-1]
-                amount.append(total)
-        else:
-            if i == 0:
-                amount.append(0)
-            else:
-                amount.append(amount[i-1])
+        start, end = get_day_range(current_date)
+        objects = IeSys.objects.filter(date__gte=start, date__lte=end)
+        
+        daily_net = 0
+        for obj in objects:
+            daily_net += (obj.income_amount or 0) - (obj.expenditure_amount or 0)
+        
+        cumulative += daily_net
+        amount.append(cumulative)
+    
     data = pd.DataFrame({
         '日': days,
         '总收支': amount

@@ -7,6 +7,13 @@
             <a href="{% url 'IESys_:ie' %}">返回收支页面</a>
         </p>
         {{fig|safe}}
+        <p>支出详情:</p>
+        <ul>
+            {% for e, a, t in combined %}
+                <li>{{e}}: {{a}}  {{t|date:'H:i'}}</li>
+            {% endfor %}
+        </ul>
+        <p>今日总支出: {{total_amount}}</p>
     {% else %}
         <p>今日还没有任何支出哦！</p>
     {% endif %}
