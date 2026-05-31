@@ -1,0 +1,13 @@
+{% extends 'IESys_/base.html' %}
+
+{% block context %}
+    <p>这是收支页面</p>
+    <p>
+        <a href="{% url 'IESys_:income' %}">收入</a>
+        <a href="{% url 'IESys_:income_detail' %}">今日收入统计</a>
+    </p>
+    <p>
+        <a href="{% url 'IESys_:expenditure' %}">支出</a>
+        <a href="{% url 'IESys_:expenditure_detail' %}">今日支出统计</a>
+    </p>
+{% endblock context %}

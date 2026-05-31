@@ -1,0 +1,13 @@
+{% extends 'IESys_/base.html' %}
+
+{% block context %}
+    {% if flag %}
+        <p>这是今日支出统计</p>
+        <p>
+            <a href="{% url 'IESys_:ie' %}">返回收支页面</a>
+        </p>
+        {{fig|safe}}
+    {% else %}
+        <p>今日还没有任何支出哦！</p>
+    {% endif %}
+{% endblock context %}

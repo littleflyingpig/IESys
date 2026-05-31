@@ -1,0 +1,7 @@
+{% extends 'IESys_/base.html' %}
+
+{% block context %}
+    <p>Hello!</p>
+    <p><a href="{% url 'IESys_:ie' %}">收支</a></p>
+    <p><a href="{% url 'IESys_:sta' %}">统计</a></p>
+{% endblock context %}

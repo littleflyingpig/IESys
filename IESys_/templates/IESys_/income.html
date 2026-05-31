@@ -1,0 +1,35 @@
+{% extends 'IESys_/base.html' %}
+
+{% block context %}
+    <p>这是收入页面</p>
+    <form action="{% url 'IESys_:income' %}" method="POST">
+        {% csrf_token %}
+
+        <select name="income" style="padding: 8px;">
+            <option value="固定收入">固定收入</option>
+            <option value="外快收入">外快收入</option>
+            <option value="其他收入">其他收入</option>
+        </select>
+
+        {{ form.income_amount }}
+        <!-- {{form.as_p}} -->
+        <button name="submit">提交</button>
+    </form>
+    <p><a href="{% url 'IESys_:ie' %}">返回收支页面</a></p>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div id="msg" style="color: green; padding: 10px; border: 1px solid green; margin-bottom: 15px;">
+            {{ message }}
+            </div>
+        {% endfor %}
+        <script>
+        setTimeout(function() {
+            var msg = document.getElementById('msg');
+            if (msg) {
+                msg.style.display = 'none';
+            }
+        }, 1000); 
+        </script>
+    {% endif %}
+{% endblock context %}
