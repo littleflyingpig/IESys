@@ -65,7 +65,7 @@ def income_detail(request):
     """编写收入的详细页面视图"""
     today = timezone.now().date()
     start, end = get_day_range(today)
-    objects = IeSys.objects.filter(date__gte=start, date__lte=end)
+    objects = IeSys.objects.filter(income_amount__gt=0, date__gte=start, date__lte=end)
     if objects:
         data = {}
         ic = []
@@ -100,7 +100,7 @@ def expenditure_detail(request):
     """"编写支出的详细页面视图"""
     today = timezone.now().date()
     start, end = get_day_range(today)
-    objects = IeSys.objects.filter(date__gte=start, date__lte=end)
+    objects = IeSys.objects.filter(expenditure_amount__gt=0, date__gte=start, date__lte=end)
     if objects:
         data = {}
         ed = []
@@ -164,9 +164,12 @@ def month_ie(request):
     today = date.today()
     total_days = calendar.monthrange(today.year, today.month)[1]
     first_day = date(today.year, today.month, 1)
+
+    total_balance = IeSys.get_total_balance()
+
     days = []
     amount = []
-    cumulative = 0
+    cumulative = total_balance
     
     for i in range(total_days):
         current_date = first_day + timedelta(days=i)
