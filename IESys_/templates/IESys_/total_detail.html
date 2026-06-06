@@ -1,0 +1,16 @@
+{% extends 'IESys_/base.html' %}
+
+{% block context %}
+    <p>这是详情页面</p>
+    {% for item in result %}
+        {{item.oneday|date:'Y-m-d'}}
+        <ul>
+            {% if item.income %}
+            <li>收入：{{item.income|floatformat:2}}</li>
+            {% endif %}
+            {% if item.expenditure %}
+                <li>支出：{{item.expenditure|floatformat:2}}</li>
+            {% endif %}
+        </ul>
+    {% endfor %}
+{% endblock context %}

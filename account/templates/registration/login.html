@@ -1,0 +1,11 @@
+{% extends 'IESys_/base.html' %}
+
+{% block context %}
+    <h2>这是登录页面</h2>
+    <form action="{% url 'account:login' %}" method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">提交</button>
+        <input type="hidden" name="next" value="{% url 'IESys_:index' %}">
+    </form>
+{% endblock context %}

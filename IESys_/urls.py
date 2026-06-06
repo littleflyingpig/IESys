@@ -13,4 +13,5 @@ urlpatterns = [
     path('expenditure_detail/', views.expenditure_detail, name='expenditure_detail'),
     path('week_expenditure/', views.week_expenditure, name='week_expenditure'),
     path('month_ie/', views.month_ie, name='month_ie'),
+    path('total_detail/', views.total_detail, name='total_detail'),
 ]

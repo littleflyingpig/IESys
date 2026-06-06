@@ -1,9 +1,13 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponseNotAllowed
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.db.models import Sum
+from django.db.models.functions import TruncDate
 from .form import IeSysForm
 from .models import IeSys
+
 
 from datetime import date, timedelta, datetime
 import calendar
@@ -22,17 +26,17 @@ def index(request):
     """编写收支系统的主页视图"""
     return render(request, 'IESys_/index.html')
 
-
+@login_required
 def ie(request):
     """编写主页中跳转收支页面的视图"""
     return render(request, 'IESys_/ie.html')
 
-
+@login_required
 def sta(request):
     """编写主页中统计页面的视图"""
     return render(request, 'IESys_/sta.html')
 
-
+@login_required
 def income(request):
     """编写收支页面的收入的视图"""
     if request.method != "POST":
@@ -46,7 +50,7 @@ def income(request):
     context = {'form': form}
     return render(request, 'IESys_/income.html', context)
 
-
+@login_required
 def expenditure(request):
     """"编写支出页面的支出视图"""
     if request.method != "POST":
@@ -60,7 +64,7 @@ def expenditure(request):
     context = {'form': form}
     return render(request, 'IESys_/expenditure.html', context)
 
-
+@login_required
 def income_detail(request):
     """编写收入的详细页面视图"""
     today = timezone.now().date()
@@ -95,7 +99,7 @@ def income_detail(request):
         context = {'flag': 0}
         return render(request, 'IESys_/income_detail.html', context)
     
-
+@login_required
 def expenditure_detail(request):
     """"编写支出的详细页面视图"""
     today = timezone.now().date()
@@ -130,6 +134,7 @@ def expenditure_detail(request):
         context = {'flag': 0}
         return render(request, 'IESys_/expenditure_detail.html', context)
 
+@login_required
 def week_expenditure(request):
     """编写统计页面中的周统计"""
     today = date.today()
@@ -158,7 +163,7 @@ def week_expenditure(request):
     context = {'fig': fig}
     return render(request, 'IESys_/week_expenditure.html', context)
 
-
+@login_required
 def month_ie(request):
     """编写统计页面中的月收支"""
     today = date.today()
@@ -194,3 +199,14 @@ def month_ie(request):
     fig = fig.to_html(full_html=False)
     context = {'fig': fig}
     return render(request, 'IESys_/month_ie.html', context)
+
+@login_required
+def total_detail(request):
+    """编写首页的详情页面"""
+    result = IeSys.objects.annotate(oneday=TruncDate('date')).values('oneday').annotate(
+        expenditure = Sum('expenditure_amount'),
+        income = Sum('income_amount')
+    ).order_by('-oneday')
+
+    context = {'result': result}
+    return render(request, 'IESys_/total_detail.html', context)

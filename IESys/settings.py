@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     #自定义应用
     'IESys_',
+    'account',
     #官方应用
     'django.contrib.admin',
     'django.contrib.auth',

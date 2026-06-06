@@ -1,7 +1,19 @@
 {% extends 'IESys_/base.html' %}
 
 {% block context %}
-    <p>Hello!</p>
-    <p><a href="{% url 'IESys_:ie' %}">收支</a></p>
-    <p><a href="{% url 'IESys_:sta' %}">统计</a></p>
+    {% if user.is_authenticated %}
+        <p>
+            Hello {{user}}!
+            <form action="{% url 'account:logout' %}" method="POST">
+                {% csrf_token %}
+                <button type="submit">退出</button>
+            </form>
+        </p>
+        <p><a href="{% url 'IESys_:ie' %}">收支</a></p>
+        <p><a href="{% url 'IESys_:sta' %}">统计</a></p>
+        <p><a href="{% url 'IESys_:total_detail' %}">详情</a></p>
+    {% else %}
+        <p><a href="{% url 'account:login' %}">登录</a></p>
+        <p><a href="{% url 'account:register' %}">注册</a></p>
+    {% endif %}
 {% endblock context %}
