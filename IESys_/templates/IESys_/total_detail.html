@@ -1,21 +1,85 @@
 {% extends 'IESys_/base.html' %}
 
+{% block page_header %}
+<div class="mb-6 md:mb-8">
+    <h2 class="text-2xl md:text-3xl font-bold text-slate-800">全部详情</h2>
+    <p class="text-slate-500 mt-1 text-sm md:text-base">所有历史收支记录，按日汇总</p>
+</div>
+{% endblock %}
+
 {% block context %}
-    {% if result %}
-        <p>这是详情页面</p>
-        {% for item in result %}
-            {{item.oneday|date:'Y-m-d'}}
-                <ul>
-                    {% if item.income %}
-                        <li>收入：{{item.income|floatformat:2}}</li>
-                    {% endif %}
-                    {% if item.expenditure %}
-                        <li>支出：{{item.expenditure|floatformat:2}}</li>
-                    {% endif %}
-                </ul>
-        {% endfor %}
-    {% else %}
-        <h2>您暂时还没有任何收支情况。</h2>
-    {% endif %}
-    
+
+{% if result %}
+<div class="space-y-4">
+    {% for item in result %}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <!-- 日期头部 -->
+        <div class="px-6 py-3 bg-slate-50 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+                <span class="text-lg">📅</span>
+                <span class="font-bold text-slate-700">{{ item.oneday|date:'Y年m月d日' }}</span>
+                <span class="text-sm text-slate-400">{{ item.oneday|date:'l' }}</span>
+            </div>
+        </div>
+        <!-- 收支数据 -->
+        <div class="px-6 py-3 flex flex-wrap gap-4">
+            {% if item.income %}
+            <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium">
+                    📈 收入
+                </span>
+                <span class="font-bold text-emerald-600">¥ {{ item.income|floatformat:2 }}</span>
+            </div>
+            {% endif %}
+            {% if item.expenditure %}
+            <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded-lg bg-red-50 text-red-700 text-sm font-medium">
+                    📉 支出
+                </span>
+                <span class="font-bold text-red-500">¥ {{ item.expenditure|floatformat:2 }}</span>
+            </div>
+            {% endif %}
+            {% if item.income or item.expenditure %}
+            <div class="flex items-center gap-2 ml-auto">
+                <span class="text-xs text-slate-400">当日</span>
+                {% if item.income and not item.expenditure %}
+                    <span class="font-bold text-emerald-600">收入 ¥ {{ item.income|floatformat:2 }}</span>
+                {% elif item.expenditure and not item.income %}
+                    <span class="font-bold text-red-500">支出 ¥ {{ item.expenditure|floatformat:2 }}</span>
+                {% else %}
+                    <span class="font-bold text-slate-600">收支均有</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<!-- 空状态 -->
+<div class="text-center py-16">
+    <div class="text-6xl mb-4">📭</div>
+    <h3 class="text-xl font-bold text-slate-700 mb-2">您暂时还没有任何收支记录</h3>
+    <p class="text-slate-500 mb-6">快去添加你的第一笔记录吧！</p>
+    <div class="flex gap-3 justify-center">
+        <a href="{% url 'IESys_:income' %}"
+           class="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white font-semibold rounded-xl hover:bg-emerald-600 shadow-lg shadow-emerald-500/25 transition-all">
+            💰 添加收入
+        </a>
+        <a href="{% url 'IESys_:expenditure' %}"
+           class="inline-flex items-center gap-2 px-6 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 shadow-lg shadow-red-500/25 transition-all">
+            🛒 添加支出
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<!-- 返回链接 -->
+<div class="mt-6 text-center">
+    <a href="{% url 'IESys_:index' %}" class="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 transition-colors">
+        ← 返回首页
+    </a>
+</div>
+
 {% endblock context %}

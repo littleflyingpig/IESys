@@ -1,20 +1,85 @@
 {% extends 'IESys_/base.html' %}
 
+{% block page_header %}
+<div class="mb-6 md:mb-8">
+    <h2 class="text-2xl md:text-3xl font-bold text-slate-800">今日支出统计</h2>
+    <p class="text-slate-500 mt-1 text-sm md:text-base">你今天的所有消费一览</p>
+</div>
+{% endblock %}
+
 {% block context %}
-    {% if flag %}
-        <p>这是今日支出统计</p>
-        <p>
-            <a href="{% url 'IESys_:ie' %}">返回收支页面</a>
-        </p>
-        {{fig|safe}}
-        <p>支出详情:</p>
-        <ul>
-            {% for e, a, t in combined %}
-                <li>{{e}}: {{a}}  {{t|date:'H:i'}}</li>
-            {% endfor %}
-        </ul>
-        <p>今日总支出: {{total_amount}}</p>
-    {% else %}
-        <p>今日还没有任何支出哦！</p>
-    {% endif %}
+
+{% if flag %}
+<!-- 总金额卡片 -->
+<div class="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg shadow-red-500/25 p-6 mb-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <p class="text-red-100 text-sm font-medium mb-1">今日总支出</p>
+            <p class="text-white text-3xl md:text-4xl font-bold">¥ {{ total_amount|floatformat:2 }}</p>
+        </div>
+        <div class="text-5xl">🛒</div>
+    </div>
+</div>
+
+<!-- 支出构成饼图 -->
+{% if fig %}
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6 mb-6 plotly-container">
+    <h3 class="text-lg font-bold text-slate-800 mb-4">📊 支出构成</h3>
+    {{ fig|safe }}
+</div>
+{% endif %}
+
+<!-- 支出明细表格 -->
+{% if combined %}
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100">
+        <h3 class="text-lg font-bold text-slate-800">📋 支出明细</h3>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="bg-gray-50 text-left text-sm font-semibold text-slate-500">
+                    <th class="px-6 py-3">类别</th>
+                    <th class="px-6 py-3">金额</th>
+                    <th class="px-6 py-3">时间</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                {% for e, a, t in combined %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-3.5">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-50 text-red-700 text-sm font-medium">
+                            {{ e }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-3.5 font-semibold text-slate-800">¥ {{ a|floatformat:2 }}</td>
+                    <td class="px-6 py-3.5 text-sm text-slate-500">{{ t|date:'H:i' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<!-- 空状态 -->
+<div class="text-center py-16">
+    <div class="text-6xl mb-4">📭</div>
+    <h3 class="text-xl font-bold text-slate-700 mb-2">今日还没有任何支出哦！</h3>
+    <p class="text-slate-500 mb-6">看来今天你控制得很好～</p>
+    <a href="{% url 'IESys_:expenditure' %}"
+       class="inline-flex items-center gap-2 px-6 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 shadow-lg shadow-red-500/25 transition-all">
+        ➕ 添加支出
+    </a>
+</div>
+{% endif %}
+
+<!-- 返回链接 -->
+<div class="mt-6 text-center">
+    <a href="{% url 'IESys_:ie' %}" class="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 transition-colors">
+        ← 返回收支页面
+    </a>
+</div>
+
 {% endblock context %}

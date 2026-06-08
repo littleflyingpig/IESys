@@ -1,2 +1,228 @@
-<a href="{% url 'IESys_:index' %}">这是我的收支系统 Income Expanditure System</a>
-{% block context %}{% endblock context %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IESys - 收支管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e293b',
+                        accent: '#10b981',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+        /* Plotly 图表容器适配 */
+        .plotly-container .plotly { width: 100% !important; }
+        .plotly-container svg { max-width: 100% !important; height: auto !important; }
+        /* 金额输入框去掉 spinner */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+        /* 抖动动画 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+        .animate-shake { animation: shake 0.3s ease-in-out; }
+        /* 淡入淡出 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen"
+      x-data="{
+          mobileMenuOpen: false,
+          toasts: [],
+          addToast(msg, type='success') {
+              const id = Date.now();
+              this.toasts.push({id, msg, type});
+              setTimeout(() => {
+                  this.toasts = this.toasts.filter(t => t.id !== id);
+              }, 3500);
+          }
+      }"
+      @django-message.window="addToast($event.detail.message, $event.detail.type || 'success')">
+
+    <!-- ====== 桌面端侧边栏 ====== -->
+    <aside class="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:w-64 bg-slate-800 text-white z-30">
+        <!-- Logo -->
+        <div class="flex items-center gap-3 px-6 py-6 border-b border-slate-700">
+            <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-xl">
+                💰
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-wide">IESys</h1>
+                <p class="text-xs text-slate-400">收支管理系统</p>
+            </div>
+        </div>
+
+        <!-- 导航菜单 -->
+        <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+            <a href="{% url 'IESys_:index' %}"
+               class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
+                      {% if request.resolver_match.url_name == 'index' %}bg-emerald-500 text-white shadow-lg shadow-emerald-500/30{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %}">
+                <span class="text-lg">🏠</span> 首页
+            </a>
+            <a href="{% url 'IESys_:ie' %}"
+               class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
+                      {% if request.resolver_match.url_name == 'ie' %}bg-emerald-500 text-white shadow-lg shadow-emerald-500/30{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %}">
+                <span class="text-lg">💳</span> 收支
+            </a>
+            <a href="{% url 'IESys_:sta' %}"
+               class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
+                      {% if request.resolver_match.url_name == 'sta' %}bg-emerald-500 text-white shadow-lg shadow-emerald-500/30{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %}">
+                <span class="text-lg">📊</span> 统计
+            </a>
+            <a href="{% url 'IESys_:total_detail' %}"
+               class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
+                      {% if request.resolver_match.url_name == 'total_detail' %}bg-emerald-500 text-white shadow-lg shadow-emerald-500/30{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %}">
+                <span class="text-lg">📋</span> 详情
+            </a>
+        </nav>
+
+        <!-- 用户信息 -->
+        <div class="p-4 border-t border-slate-700">
+            {% if user.is_authenticated %}
+            <div class="flex items-center gap-3 px-2">
+                <div class="w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center text-sm font-bold">
+                    {{ user.username|first|upper }}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium truncate">{{ user.username }}</p>
+                    <form action="{% url 'account:logout' %}" method="POST" class="m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="text-xs text-slate-400 hover:text-red-400 transition-colors">退出登录</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div class="space-y-2 px-2">
+                <a href="{% url 'account:login' %}"
+                   class="block w-full text-center py-2 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 transition-colors">
+                    登录
+                </a>
+                <a href="{% url 'account:register' %}"
+                   class="block w-full text-center py-2 rounded-lg border border-slate-600 text-slate-300 text-sm font-medium hover:border-slate-400 hover:text-white transition-colors">
+                    注册
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </aside>
+
+    <!-- ====== 移动端顶部栏 ====== -->
+    <header class="md:hidden fixed top-0 inset-x-0 z-20 bg-white shadow-sm">
+        <div class="flex items-center justify-between px-4 py-3">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-sm">💰</div>
+                <span class="font-bold text-slate-800">IESys</span>
+            </div>
+            <div class="flex items-center gap-3">
+                {% if user.is_authenticated %}
+                <span class="text-sm text-slate-600">{{ user.username }}</span>
+                <form action="{% url 'account:logout' %}" method="POST" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-500 transition-colors">
+                        退出
+                    </button>
+                </form>
+                {% else %}
+                <a href="{% url 'account:login' %}" class="text-sm px-3 py-1.5 rounded-lg bg-emerald-500 text-white">登录</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- ====== 主内容区 ====== -->
+    <main class="md:ml-64 pt-14 md:pt-0 pb-20 md:pb-0">
+        <div class="max-w-5xl mx-auto px-4 py-6 md:py-8">
+            <!-- 页面标题（由子模板通过 block title 设置） -->
+            {% block page_header %}{% endblock %}
+
+            <!-- 内容区 -->
+            {% block context %}{% endblock context %}
+        </div>
+    </main>
+
+    <!-- ====== 移动端底部导航 ====== -->
+    <nav class="md:hidden fixed bottom-0 inset-x-0 z-20 bg-white border-t border-gray-200 safe-area-bottom"
+         x-data>
+        <div class="grid grid-cols-4 h-16">
+            <a href="{% url 'IESys_:index' %}"
+               class="flex flex-col items-center justify-center gap-0.5 transition-colors
+                      {% if request.resolver_match.url_name == 'index' %}text-emerald-500{% else %}text-slate-400 hover:text-slate-600{% endif %}">
+                <span class="text-xl">🏠</span>
+                <span class="text-xs font-medium">首页</span>
+            </a>
+            <a href="{% url 'IESys_:ie' %}"
+               class="flex flex-col items-center justify-center gap-0.5 transition-colors
+                      {% if request.resolver_match.url_name == 'ie' %}text-emerald-500{% else %}text-slate-400 hover:text-slate-600{% endif %}">
+                <span class="text-xl">💳</span>
+                <span class="text-xs font-medium">收支</span>
+            </a>
+            <a href="{% url 'IESys_:sta' %}"
+               class="flex flex-col items-center justify-center gap-0.5 transition-colors
+                      {% if request.resolver_match.url_name == 'sta' %}text-emerald-500{% else %}text-slate-400 hover:text-slate-600{% endif %}">
+                <span class="text-xl">📊</span>
+                <span class="text-xs font-medium">统计</span>
+            </a>
+            <a href="{% url 'IESys_:total_detail' %}"
+               class="flex flex-col items-center justify-center gap-0.5 transition-colors
+                      {% if request.resolver_match.url_name == 'total_detail' %}text-emerald-500{% else %}text-slate-400 hover:text-slate-600{% endif %}">
+                <span class="text-xl">📋</span>
+                <span class="text-xs font-medium">详情</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- ====== Toast 通知容器 ====== -->
+    <div class="fixed top-4 right-4 z-50 space-y-2 max-w-sm w-full pointer-events-none"
+         x-data x-init="
+             {% if messages %}
+                 {% for message in messages %}
+                     $dispatch('django-message', {
+                         message: '{{ message|escapejs }}',
+                         type: '{{ message.tags|default:"success" }}'
+                     });
+                 {% endfor %}
+             {% endif %}
+         ">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div class="pointer-events-auto animate-fade-in"
+                 :class="toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'"
+                 x-show="toasts.includes(toast)"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-x-6"
+                 x-transition:enter-end="opacity-100 translate-x-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-x-0"
+                 x-transition:leave-end="opacity-0 translate-x-6">
+                <div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-white text-sm">
+                    <span x-text="toast.type === 'error' ? '⚠️' : '✅'"></span>
+                    <span x-text="toast.msg" class="flex-1"></span>
+                    <button @click="toasts = toasts.filter(t => t.id !== toast.id)" class="text-white/70 hover:text-white">
+                        ✕
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
+
+</body>
+</html>

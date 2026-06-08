@@ -24,7 +24,38 @@ def get_day_range(target_date):
 
 def index(request):
     """编写收支系统的主页视图"""
-    return render(request, 'IESys_/index.html')
+    context = {}
+    if request.user.is_authenticated:
+        today = timezone.now().date()
+        start, end = get_day_range(today)
+
+        # 今日收入
+        today_income = IeSys.objects.filter(
+            user=request.user, income_amount__gt=0,
+            date__gte=start, date__lte=end
+        ).aggregate(total=Sum('income_amount'))['total'] or 0
+
+        # 今日支出
+        today_expense = IeSys.objects.filter(
+            user=request.user, expenditure_amount__gt=0,
+            date__gte=start, date__lte=end
+        ).aggregate(total=Sum('expenditure_amount'))['total'] or 0
+
+        # 本月累计结余
+        first_day = date(today.year, today.month, 1)
+        month_income = IeSys.objects.filter(
+            user=request.user, date__gte=first_day
+        ).aggregate(total=Sum('income_amount'))['total'] or 0
+        month_expense = IeSys.objects.filter(
+            user=request.user, date__gte=first_day
+        ).aggregate(total=Sum('expenditure_amount'))['total'] or 0
+
+        context = {
+            'today_income': today_income,
+            'today_expense': today_expense,
+            'month_balance': month_income - month_expense,
+        }
+    return render(request, 'IESys_/index.html', context)
 
 @login_required
 def ie(request):
@@ -46,7 +77,7 @@ def income(request):
         if form.is_valid():
             form.instance.user = request.user
             form.save()
-            messages.success(request, '支出添加成功！')
+            messages.success(request, '收入添加成功！')
             return redirect('IESys_:income')
     context = {'form': form}
     return render(request, 'IESys_/income.html', context)
@@ -61,7 +92,7 @@ def expenditure(request):
         if form.is_valid():
             form.instance.user = request.user
             form.save()
-            messages.success(request, "收入添加成功！")
+            messages.success(request, "支出添加成功！")
             return redirect('IESys_:expenditure')
     context = {'form': form}
     return render(request, 'IESys_/expenditure.html', context)

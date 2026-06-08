@@ -1,13 +1,75 @@
 {% extends 'IESys_/base.html' %}
 
+{% block page_header %}
+<div class="mb-6 md:mb-8">
+    <h2 class="text-2xl md:text-3xl font-bold text-slate-800">收支管理</h2>
+    <p class="text-slate-500 mt-1 text-sm md:text-base">记录或查看你的收支明细</p>
+</div>
+{% endblock %}
+
 {% block context %}
-    <p>这是收支页面</p>
-    <p>
-        <a href="{% url 'IESys_:income' %}">收入</a>
-        <a href="{% url 'IESys_:income_detail' %}">今日收入统计</a>
-    </p>
-    <p>
-        <a href="{% url 'IESys_:expenditure' %}">支出</a>
-        <a href="{% url 'IESys_:expenditure_detail' %}">今日支出统计</a>
-    </p>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- 收入区 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-emerald-500 px-6 py-4">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">💰</span>
+                <div>
+                    <h3 class="text-white font-bold text-lg">收入</h3>
+                    <p class="text-emerald-100 text-sm">管理你的收入来源</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-6 space-y-3">
+            <a href="{% url 'IESys_:income' %}"
+               class="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-emerald-50 text-emerald-700 font-medium hover:bg-emerald-100 transition-colors">
+                <span class="text-xl">➕</span>
+                <span>添加收入</span>
+                <span class="ml-auto text-emerald-400">→</span>
+            </a>
+            <a href="{% url 'IESys_:income_detail' %}"
+               class="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-gray-50 text-slate-700 font-medium hover:bg-gray-100 transition-colors">
+                <span class="text-xl">📊</span>
+                <span>今日收入统计</span>
+                <span class="ml-auto text-slate-300">→</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 支出区 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-red-500 px-6 py-4">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">🛒</span>
+                <div>
+                    <h3 class="text-white font-bold text-lg">支出</h3>
+                    <p class="text-red-100 text-sm">跟踪你的消费支出</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-6 space-y-3">
+            <a href="{% url 'IESys_:expenditure' %}"
+               class="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-red-50 text-red-700 font-medium hover:bg-red-100 transition-colors">
+                <span class="text-xl">➕</span>
+                <span>添加支出</span>
+                <span class="ml-auto text-red-400">→</span>
+            </a>
+            <a href="{% url 'IESys_:expenditure_detail' %}"
+               class="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-gray-50 text-slate-700 font-medium hover:bg-gray-100 transition-colors">
+                <span class="text-xl">📊</span>
+                <span>今日支出统计</span>
+                <span class="ml-auto text-slate-300">→</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 快捷返回 -->
+<div class="mt-6 text-center">
+    <a href="{% url 'IESys_:index' %}" class="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 transition-colors">
+        ← 返回首页
+    </a>
+</div>
+
 {% endblock context %}

@@ -1,9 +1,33 @@
 {% extends 'IESys_/base.html' %}
 
+{% block page_header %}
+<div class="mb-6 md:mb-8">
+    <h2 class="text-2xl md:text-3xl font-bold text-slate-800">月收支统计</h2>
+    <p class="text-slate-500 mt-1 text-sm md:text-base">本月每日累计收支趋势</p>
+</div>
+{% endblock %}
+
 {% block context %}
-    <p>这是月收支统计页面</p>
+
+<!-- 图表卡片 -->
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6 mb-6 plotly-container">
     {{ fig|safe }}
-    <p>
-        <a href="{% url 'IESys_:sta' %}">返回统计页面</a>
-    </p>
+</div>
+
+<!-- 说明提示 -->
+<div class="bg-purple-50 border border-purple-100 rounded-xl p-4 flex items-start gap-3">
+    <span class="text-xl">💡</span>
+    <div>
+        <p class="text-sm font-medium text-purple-800">图表说明</p>
+        <p class="text-sm text-purple-600 mt-0.5">柱状图展示本月每天的累计净收支变化（总收入 - 总支出），反映你的整体财务状况趋势。正值表示累计盈利，负值表示累计亏损。</p>
+    </div>
+</div>
+
+<!-- 返回链接 -->
+<div class="mt-6">
+    <a href="{% url 'IESys_:sta' %}" class="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 transition-colors">
+        ← 返回统计页面
+    </a>
+</div>
+
 {% endblock context %}

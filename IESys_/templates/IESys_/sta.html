@@ -1,11 +1,55 @@
 {% extends 'IESys_/base.html' %}
 
+{% block page_header %}
+<div class="mb-6 md:mb-8">
+    <h2 class="text-2xl md:text-3xl font-bold text-slate-800">统计分析</h2>
+    <p class="text-slate-500 mt-1 text-sm md:text-base">查看你的收支趋势与构成</p>
+</div>
+{% endblock %}
+
 {% block context %}
-    <p>这是统计页面</p>
-    <p>
-        <a href="{% url 'IESys_:week_expenditure' %}">周支出统计</a>
-    </p>
-    <p>
-        <a href="{% url 'IESys_:month_ie' %}">月收支统计</a>
-    </p>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- 周统计 -->
+    <a href="{% url 'IESys_:week_expenditure' %}"
+       class="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:border-indigo-300 hover:shadow-md transition-all">
+        <div class="flex items-start gap-4">
+            <div class="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center text-3xl group-hover:bg-indigo-200 transition-colors">
+                📅
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-slate-800 mb-1">周支出统计</h3>
+                <p class="text-sm text-slate-500 mb-3">本周每日支出柱状图，清晰看到消费趋势</p>
+                <span class="inline-flex items-center gap-1 text-sm font-medium text-indigo-500 group-hover:text-indigo-600 transition-colors">
+                    查看详情 <span class="group-hover:translate-x-1 transition-transform">→</span>
+                </span>
+            </div>
+        </div>
+    </a>
+
+    <!-- 月统计 -->
+    <a href="{% url 'IESys_:month_ie' %}"
+       class="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:border-purple-300 hover:shadow-md transition-all">
+        <div class="flex items-start gap-4">
+            <div class="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center text-3xl group-hover:bg-purple-200 transition-colors">
+                📆
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-slate-800 mb-1">月收支统计</h3>
+                <p class="text-sm text-slate-500 mb-3">本月每日累计收支趋势，掌握整体财务健康</p>
+                <span class="inline-flex items-center gap-1 text-sm font-medium text-purple-500 group-hover:text-purple-600 transition-colors">
+                    查看详情 <span class="group-hover:translate-x-1 transition-transform">→</span>
+                </span>
+            </div>
+        </div>
+    </a>
+</div>
+
+<!-- 快捷返回 -->
+<div class="mt-6 text-center">
+    <a href="{% url 'IESys_:index' %}" class="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 transition-colors">
+        ← 返回首页
+    </a>
+</div>
+
 {% endblock context %}
