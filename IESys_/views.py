@@ -44,6 +44,7 @@ def income(request):
     else:
         form = IeSysForm(data=request.POST)
         if form.is_valid():
+            form.instance.user = request.user
             form.save()
             messages.success(request, '支出添加成功！')
             return redirect('IESys_:income')
@@ -58,6 +59,7 @@ def expenditure(request):
     else:
         form = IeSysForm(data=request.POST)
         if form.is_valid():
+            form.instance.user = request.user
             form.save()
             messages.success(request, "收入添加成功！")
             return redirect('IESys_:expenditure')
@@ -69,7 +71,7 @@ def income_detail(request):
     """编写收入的详细页面视图"""
     today = timezone.now().date()
     start, end = get_day_range(today)
-    objects = IeSys.objects.filter(income_amount__gt=0, date__gte=start, date__lte=end)
+    objects = IeSys.objects.filter(user=request.user, income_amount__gt=0, date__gte=start, date__lte=end)
     if objects:
         data = {}
         ic = []
@@ -104,7 +106,7 @@ def expenditure_detail(request):
     """"编写支出的详细页面视图"""
     today = timezone.now().date()
     start, end = get_day_range(today)
-    objects = IeSys.objects.filter(expenditure_amount__gt=0, date__gte=start, date__lte=end)
+    objects = IeSys.objects.filter(user=request.user, expenditure_amount__gt=0, date__gte=start, date__lte=end)
     if objects:
         data = {}
         ed = []
@@ -146,7 +148,7 @@ def week_expenditure(request):
     current = monday
     while current <= sunday:
         start, end = get_day_range(current)
-        objects = IeSys.objects.filter(date__gte=start, date__lte=end)
+        objects = IeSys.objects.filter(user=request.user, date__gte=start, date__lte=end)
         
         total = 0
         for obj in objects:
@@ -170,8 +172,12 @@ def month_ie(request):
     total_days = calendar.monthrange(today.year, today.month)[1]
     first_day = date(today.year, today.month, 1)
 
-    total_balance = IeSys.get_total_balance()
+    # total_balance = IeSys.get_total_balance()
 
+    total_income = IeSys.objects.filter(user=request.user).aggregate(total=Sum('income_amount'))['total'] or 0
+    total_expense = IeSys.objects.filter(user=request.user).aggregate(total=Sum('expenditure_amount'))['total'] or 0
+    total_balance = total_income - total_expense
+    
     days = []
     amount = []
     cumulative = total_balance
@@ -181,7 +187,7 @@ def month_ie(request):
         days.append(str(current_date.day))
         
         start, end = get_day_range(current_date)
-        objects = IeSys.objects.filter(date__gte=start, date__lte=end)
+        objects = IeSys.objects.filter(user=request.user, date__gte=start, date__lte=end)
         
         daily_net = 0
         for obj in objects:
@@ -203,7 +209,7 @@ def month_ie(request):
 @login_required
 def total_detail(request):
     """编写首页的详情页面"""
-    result = IeSys.objects.annotate(oneday=TruncDate('date')).values('oneday').annotate(
+    result = IeSys.objects.filter(user=request.user).annotate(oneday=TruncDate('date')).values('oneday').annotate(
         expenditure = Sum('expenditure_amount'),
         income = Sum('income_amount')
     ).order_by('-oneday')
