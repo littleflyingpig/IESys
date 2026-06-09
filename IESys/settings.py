@@ -167,3 +167,6 @@ else:
     DEBUG = True
     ALLOWED_HOSTS = ['*'] 
     CSRF_TRUSTED_ORIGINS = []
+
+#如果用户未登录则重定向到登录页面
+LOGIN_URL = 'accounter:login'

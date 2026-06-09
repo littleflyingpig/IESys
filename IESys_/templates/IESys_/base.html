@@ -79,17 +79,17 @@
                       {% if request.resolver_match.url_name == 'index' %}bg-emerald-500 text-white shadow-lg shadow-emerald-500/30{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %}">
                 <span class="text-lg">🏠</span> 首页
             </a>
-            <a href="{% url 'IESys_:ie' %}"
+            <a href="{% if user.is_authenticated %}{% url 'IESys_:ie' %}{% else %}{% url 'account:login' %}{% endif %}"
                class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
                       {% if request.resolver_match.url_name == 'ie' %}bg-emerald-500 text-white shadow-lg shadow-emerald-500/30{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %}">
                 <span class="text-lg">💳</span> 收支
             </a>
-            <a href="{% url 'IESys_:sta' %}"
+            <a href="{% if user.is_authenticated %}{% url 'IESys_:sta' %}{% else %}{% url 'account:login' %}{% endif %}"
                class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
                       {% if request.resolver_match.url_name == 'sta' %}bg-emerald-500 text-white shadow-lg shadow-emerald-500/30{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %}">
                 <span class="text-lg">📊</span> 统计
             </a>
-            <a href="{% url 'IESys_:total_detail' %}"
+            <a href="{% if user.is_authenticated %}{% url 'IESys_:total_detail' %}{% else %}{% url 'account:login' %}{% endif %}"
                class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
                       {% if request.resolver_match.url_name == 'total_detail' %}bg-emerald-500 text-white shadow-lg shadow-emerald-500/30{% else %}text-slate-300 hover:bg-slate-700 hover:text-white{% endif %}">
                 <span class="text-lg">📋</span> 详情
@@ -170,19 +170,19 @@
                 <span class="text-xl">🏠</span>
                 <span class="text-xs font-medium">首页</span>
             </a>
-            <a href="{% url 'IESys_:ie' %}"
+            <a href="{% if user.is_authenticated %}{% url 'IESys_:ie' %}{% else %}{% url 'account:login' %}{% endif %}"
                class="flex flex-col items-center justify-center gap-0.5 transition-colors
                       {% if request.resolver_match.url_name == 'ie' %}text-emerald-500{% else %}text-slate-400 hover:text-slate-600{% endif %}">
                 <span class="text-xl">💳</span>
                 <span class="text-xs font-medium">收支</span>
             </a>
-            <a href="{% url 'IESys_:sta' %}"
+            <a href="{% if user.is_authenticated %}{% url 'IESys_:sta' %}{% else %}{% url 'account:login' %}{% endif %}"
                class="flex flex-col items-center justify-center gap-0.5 transition-colors
                       {% if request.resolver_match.url_name == 'sta' %}text-emerald-500{% else %}text-slate-400 hover:text-slate-600{% endif %}">
                 <span class="text-xl">📊</span>
                 <span class="text-xs font-medium">统计</span>
             </a>
-            <a href="{% url 'IESys_:total_detail' %}"
+            <a href="{% if user.is_authenticated %}{% url 'IESys_:total_detail' %}{% else %}{% url 'account:login' %}{% endif %}"
                class="flex flex-col items-center justify-center gap-0.5 transition-colors
                       {% if request.resolver_match.url_name == 'total_detail' %}text-emerald-500{% else %}text-slate-400 hover:text-slate-600{% endif %}">
                 <span class="text-xl">📋</span>
