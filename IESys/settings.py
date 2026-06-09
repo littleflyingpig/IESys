@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -86,17 +87,10 @@ WSGI_APPLICATION = 'IESys.wsgi.application'
 #     }
 # }
 # 第二步数据库配置：开发用 SQLite，生产用 PostgreSQL
-if os.environ.get('PGHOST'):
+if os.environ.get('DATABASE_URL'):
     # Railway 生产环境
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('PGDATABASE'),
-            'USER': os.environ.get('PGUSER'),
-            'PASSWORD': os.environ.get('PGPASSWORD'),
-            'HOST': os.environ.get('PGHOST'),
-            'PORT': os.environ.get('PGPORT'),
-        }
+        'default': dj_database_url.config(conn_max_age=600, conn_health_checks=True)
     }
 else:
     # 本地开发环境
