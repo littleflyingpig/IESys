@@ -1,1 +1,1 @@
-web: gunicorn IESys.wsig --log-file -
+web: gunicorn IESys.wsgi --log-file -
