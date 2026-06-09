@@ -17,8 +17,8 @@ import plotly.express as px
 
 def get_day_range(target_date):
     """获取某一天的开始和结束时间"""
-    start = datetime(target_date.year, target_date.month, target_date.day, 0, 0, 0)
-    end = datetime(target_date.year, target_date.month, target_date.day, 23, 59, 59)
+    start = timezone.make_aware(datetime(target_date.year, target_date.month, target_date.day, 0, 0, 0))
+    end = timezone.make_aware(datetime(target_date.year, target_date.month, target_date.day, 23, 59, 59))
     return start, end
 
 
