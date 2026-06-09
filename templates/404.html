@@ -1,0 +1,28 @@
+{% extends 'IESys_/base.html' %}
+
+{% block page_header %}
+<div class="mb-6 md:mb-8">
+    <h2 class="text-2xl md:text-3xl font-bold text-slate-800">页面未找到</h2>
+    <p class="text-slate-500 mt-1 text-sm md:text-base">404 Not Found</p>
+</div>
+{% endblock %}
+
+{% block context %}
+<div class="text-center py-12 md:py-20">
+    <div class="text-7xl mb-6">🔍</div>
+    <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-3">你访问的页面不存在</h2>
+    <p class="text-slate-500 text-lg mb-8 max-w-md mx-auto">
+        页面可能已被移动、删除，或者你输入的地址有误。
+    </p>
+    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="{% url 'IESys_:index' %}"
+           class="inline-block px-8 py-3 rounded-xl bg-emerald-500 text-white font-semibold hover:bg-emerald-600 shadow-lg shadow-emerald-500/25 transition-all hover:-translate-y-0.5">
+            🏠 返回首页
+        </a>
+        <a href="javascript:history.back()"
+           class="inline-block px-8 py-3 rounded-xl border-2 border-slate-300 text-slate-700 font-semibold hover:border-slate-400 hover:bg-slate-50 transition-all hover:-translate-y-0.5">
+            ↩️ 返回上一页
+        </a>
+    </div>
+</div>
+{% endblock context %}
