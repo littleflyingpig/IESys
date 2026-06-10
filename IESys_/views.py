@@ -9,8 +9,8 @@ from .form import IeSysForm
 from .models import IeSys
 
 
+from collections import defaultdict
 from datetime import date, timedelta, datetime
-import calendar
 import pandas as pd
 import plotly.express as px
 # Create your views here.
@@ -20,7 +20,6 @@ def get_day_range(target_date):
     start = timezone.make_aware(datetime(target_date.year, target_date.month, target_date.day, 0, 0, 0))
     end = timezone.make_aware(datetime(target_date.year, target_date.month, target_date.day, 23, 59, 59))
     return start, end
-
 
 def index(request):
     """编写收支系统的主页视图"""
@@ -322,20 +321,26 @@ def week_expenditure(request):
     monday = today - timedelta(days=today.weekday())
     sunday = monday + timedelta(days=6)
     week_labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-    amounts = []
-    dates = []
 
-    current = monday
-    while current <= sunday:
-        start, end = get_day_range(current)
-        objects = IeSys.objects.filter(user=request.user, date__gte=start, date__lte=end)
+    week_start, week_end = get_day_range(monday)
+    # 周日结束也用 get_day_range，保证范围正确
+    _, week_end = get_day_range(sunday)
 
-        total = 0
-        for obj in objects:
-            total += obj.expenditure_amount or 0
-        amounts.append(total)
-        dates.append(f'{current.month}/{current.day}')
-        current += timedelta(days=1)
+    # 一次查询整周数据
+    week_records = IeSys.objects.filter(
+        user=request.user, date__gte=week_start, date__lte=week_end
+    )
+
+    # 按天聚合
+    daily_totals = [0] * 7
+    for obj in week_records:
+        local_date = timezone.localtime(obj.date).date()
+        idx = (local_date - monday).days
+        if 0 <= idx < 7:
+            daily_totals[idx] += obj.expenditure_amount or 0
+
+    amounts = daily_totals
+    dates = [(monday + timedelta(days=i)).strftime('%m/%d') for i in range(7)]
 
     # 标记今天
     today_idx = today.weekday()
@@ -428,27 +433,29 @@ def month_ie(request):
     """编写统计页面中的月收支"""
     today = timezone.localtime(timezone.now()).date()
     cnt_day = today.day
-    total_days = calendar.monthrange(today.year, today.month)[1]
     first_day = date(today.year, today.month, 1)
 
     days = []
     amounts = []
+
+    # 一次查询整月数据（1号到今天）
+    month_start, _ = get_day_range(first_day)
+    _, today_end = get_day_range(today)
+    month_records = IeSys.objects.filter(
+        user=request.user, date__gte=month_start, date__lte=today_end
+    )
+
+    # 按天聚合当日净额
+    daily_net_map = defaultdict(lambda: 0)
+    for obj in month_records:
+        local_date = timezone.localtime(obj.date).date()
+        day_idx = local_date.day
+        daily_net_map[day_idx] += (obj.income_amount or 0) - (obj.expenditure_amount or 0)
+
     cumulative = 0
-
-    for i in range(total_days):
-        if i + 1 > cnt_day:
-            continue
-        current_date = first_day + timedelta(days=i)
-        days.append(str(current_date.day))
-
-        start, end = get_day_range(current_date)
-        objects = IeSys.objects.filter(user=request.user, date__gte=start, date__lte=end)
-
-        daily_net = 0
-        for obj in objects:
-            daily_net += (obj.income_amount or 0) - (obj.expenditure_amount or 0)
-
-        cumulative += daily_net
+    for i in range(1, cnt_day + 1):
+        days.append(str(i))
+        cumulative += daily_net_map.get(i, 0)
         amounts.append(cumulative)
 
     # 根据正负着色
