@@ -26,7 +26,7 @@ def index(request):
     """编写收支系统的主页视图"""
     context = {}
     if request.user.is_authenticated:
-        today = timezone.now().date()
+        today = timezone.localtime(timezone.now()).date()
         start, end = get_day_range(today)
 
         # 今日收入
@@ -78,7 +78,7 @@ def income(request):
             form.instance.user = request.user
             form.save()
             messages.success(request, '收入添加成功！')
-            return redirect('IESys_:income')
+            return redirect('IESys_:index')
     context = {'form': form}
     return render(request, 'IESys_/income.html', context)
 
@@ -93,14 +93,14 @@ def expenditure(request):
             form.instance.user = request.user
             form.save()
             messages.success(request, "支出添加成功！")
-            return redirect('IESys_:expenditure')
+            return redirect('IESys_:index')
     context = {'form': form}
     return render(request, 'IESys_/expenditure.html', context)
 
 @login_required
 def income_detail(request):
     """编写收入的详细页面视图"""
-    today = timezone.now().date()
+    today = timezone.localtime(timezone.now()).date()
     start, end = get_day_range(today)
     objects = IeSys.objects.filter(user=request.user, income_amount__gt=0, date__gte=start, date__lte=end)
     if objects:
@@ -108,7 +108,7 @@ def income_detail(request):
         ic = []
         ac = []
         tc = []
-        total_amount = 0  # 添加总金额变量
+        total_amount = 0
         for obj in objects:
             income = obj.income
             amount = obj.income_amount
@@ -121,12 +121,86 @@ def income_detail(request):
             ac.append(amount)
             tc.append(time)
             data[income] = data.get(income, 0) + amount
-            total_amount += amount  # 累加总金额
+            total_amount += amount
+
+        emerald_palette = [
+            '#059669', '#10b981', '#34d399', '#6ee7b7',
+            '#a7f3d0', '#047857', '#065f46', '#064e3b',
+        ]
+
+        fig = px.pie(
+            values=list(data.values()),
+            names=list(data.keys()),
+            hole=0.45,
+            color_discrete_sequence=emerald_palette,
+        )
+
+        fig.update_traces(
+            textinfo='label+percent',
+            textposition='outside',
+            textfont=dict(size=13, family='Microsoft YaHei, sans-serif', color='#475569'),
+            hovertemplate=(
+                '<b style="font-size:15px">%{label}</b><br>'
+                '金额: <b>¥ %{value:.2f}</b><br>'
+                '占比: <b>%{percent:.1%}</b>'
+                '<extra></extra>'
+            ),
+            hoverlabel=dict(
+                bgcolor='#ffffff',
+                bordercolor='#10b981',
+                font=dict(size=15, family='Microsoft YaHei, sans-serif', color='#1e293b'),
+                align='left',
+                namelength=-1,
+            ),
+            marker=dict(
+                line=dict(color='#ffffff', width=2.5)
+            ),
+            pull=[0.03] * len(data),
+            rotation=90,
+            sort=False,
+        )
+
+        fig.update_layout(
+            dragmode=False,
+            hovermode='closest',
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            autosize=True,
+            margin=dict(t=70, l=20, r=20, b=30),
+            title=dict(
+                text='今日收入构成',
+                font=dict(size=22, family='Microsoft YaHei, sans-serif', color='#1e293b'),
+                x=0.5, xanchor='center',
+                y=0.98,
+            ),
+            showlegend=True,
+            legend=dict(
+                orientation='h',
+                yanchor='bottom', y=-0.18,
+                xanchor='center', x=0.5,
+                font=dict(size=12, family='Microsoft YaHei, sans-serif', color='#64748b'),
+                itemclick=False,
+                itemdoubleclick=False,
+            ),
+            uniformtext=dict(minsize=11, mode='hide'),
+        )
+
+        fig_html = fig.to_html(
+            full_html=False,
+            config={
+                'staticPlot': False,
+                'scrollZoom': False,
+                'displayModeBar': False,
+                'responsive': True,
+                'doubleClick': False,
+                'showTips': False,
+                'displaylogo': False,
+            },
+            include_plotlyjs='cdn'
+        )
         
-        fig = px.pie(values=list(data.values()), names=list(data.keys()), title='收入构成')
-        fig = fig.to_html(full_html=False)
         combined = zip(ic, ac, tc)
-        context = {'flag': 1, 'fig': fig, 'combined': combined, 'total_amount': total_amount}
+        context = {'flag': 1, 'fig': fig_html, 'combined': combined, 'total_amount': total_amount}
         return render(request, 'IESys_/income_detail.html', context)
     else:
         context = {'flag': 0}
@@ -135,7 +209,7 @@ def income_detail(request):
 @login_required
 def expenditure_detail(request):
     """"编写支出的详细页面视图"""
-    today = timezone.now().date()
+    today = timezone.localtime(timezone.now()).date()
     start, end = get_day_range(today)
     objects = IeSys.objects.filter(user=request.user, expenditure_amount__gt=0, date__gte=start, date__lte=end)
     if objects:
@@ -143,7 +217,7 @@ def expenditure_detail(request):
         ed = []
         ad = []
         td = []
-        total_amount = 0  # 添加总金额变量
+        total_amount = 0
         for obj in objects:
             expenditure = obj.expenditure
             amount = obj.expenditure_amount
@@ -156,148 +230,183 @@ def expenditure_detail(request):
             ad.append(amount)
             td.append(time)
             data[expenditure] = data.get(expenditure, 0) + amount
-            total_amount += amount  # 累加总金额
+            total_amount += amount
+
+        red_palette = [
+            '#dc2626', '#ef4444', '#f87171', '#fca5a5',
+            '#fecaca', '#b91c1c', '#991b1b', '#7f1d1d',
+        ]
+
+        fig = px.pie(
+            values=list(data.values()),
+            names=list(data.keys()),
+            hole=0.45,
+            color_discrete_sequence=red_palette,
+        )
+
+        fig.update_traces(
+            textinfo='label+percent',
+            textposition='outside',
+            textfont=dict(size=13, family='Microsoft YaHei, sans-serif', color='#475569'),
+            hovertemplate=(
+                '<b style="font-size:15px">%{label}</b><br>'
+                '金额: <b>¥ %{value:.2f}</b><br>'
+                '占比: <b>%{percent:.1%}</b>'
+                '<extra></extra>'
+            ),
+            hoverlabel=dict(
+                bgcolor='#ffffff',
+                bordercolor='#ef4444',
+                font=dict(size=15, family='Microsoft YaHei, sans-serif', color='#1e293b'),
+                align='left',
+                namelength=-1,
+            ),
+            marker=dict(
+                line=dict(color='#ffffff', width=2.5)
+            ),
+            pull=[0.03] * len(data),
+            rotation=90,
+            sort=False,
+        )
+
+        fig.update_layout(
+            dragmode=False,
+            hovermode='closest',
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            autosize=True,
+            margin=dict(t=70, l=20, r=20, b=30),
+            title=dict(
+                text='今日支出构成',
+                font=dict(size=22, family='Microsoft YaHei, sans-serif', color='#1e293b'),
+                x=0.5, xanchor='center',
+                y=0.98,
+            ),
+            showlegend=True,
+            legend=dict(
+                orientation='h',
+                yanchor='bottom', y=-0.18,
+                xanchor='center', x=0.5,
+                font=dict(size=12, family='Microsoft YaHei, sans-serif', color='#64748b'),
+                itemclick=False,
+                itemdoubleclick=False,
+            ),
+            uniformtext=dict(minsize=11, mode='hide'),
+        )
+
+        fig_html = fig.to_html(
+            full_html=False,
+            config={
+                'staticPlot': False,
+                'scrollZoom': False,
+                'displayModeBar': False,
+                'responsive': True,
+                'doubleClick': False,
+                'showTips': False,
+                'displaylogo': False,
+            },
+            include_plotlyjs='cdn'
+        )
         
-        fig = px.pie(values=list(data.values()), names=list(data.keys()), title='支出构成')
-        fig = fig.to_html(full_html=False)
         combined = zip(ed, ad, td)
-        context = {'flag': 1, 'fig': fig, 'combined': combined, 'total_amount': total_amount}
+        context = {'flag': 1, 'fig': fig_html, 'combined': combined, 'total_amount': total_amount}
         return render(request, 'IESys_/expenditure_detail.html', context)
     else:
         context = {'flag': 0}
         return render(request, 'IESys_/expenditure_detail.html', context)
-
+    
 @login_required
 def week_expenditure(request):
     """编写统计页面中的周统计"""
-    today = date.today()
+    today = timezone.localtime(timezone.now()).date()
     monday = today - timedelta(days=today.weekday())
     sunday = monday + timedelta(days=6)
-    week = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-    amount = []
-    
+    week_labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    amounts = []
+    dates = []
+
     current = monday
     while current <= sunday:
         start, end = get_day_range(current)
         objects = IeSys.objects.filter(user=request.user, date__gte=start, date__lte=end)
-        
+
         total = 0
         for obj in objects:
             total += obj.expenditure_amount or 0
-        amount.append(total)
+        amounts.append(total)
+        dates.append(f'{current.month}/{current.day}')
         current += timedelta(days=1)
-    
+
+    # 标记今天
+    today_idx = today.weekday()
+    bar_colors = ['#f87171' if i == today_idx else '#fca5a5' for i in range(7)]
+
     df = pd.DataFrame({
-        '本周': week,
-        '支出': amount
+        '星期': week_labels,
+        '日期': dates,
+        '支出': amounts,
     })
-    fig = px.bar(df, x='本周', y='支出', title='周支出统计')
-    
-    # 自定义悬停文本
-    fig.update_traces(
-        hovertemplate='<b>%{x}</b><br>支出: %{y:.2f} 元<extra></extra>',
-        # 或者更简洁的版本：
-        # hovertemplate='%{y:.2f} 元<extra></extra>',
-        hoverlabel=dict(
-            bgcolor="white",
-            font_size=14,
-            font_family="Microsoft YaHei"
-        )
-    )
-    
-    # 完全禁用缩放，固定轴范围
-    fig.update_layout(
-        dragmode=False,  # 禁用拖拽
-        xaxis=dict(fixedrange=True),  # 固定 x 轴，禁止缩放/平移
-        yaxis=dict(fixedrange=True),  # 固定 y 轴，禁止缩放/平移
-        hovermode='x unified',  # 统一悬停模式
-        # 可选：美化布局
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-    )
-    
-    # 转换为 HTML，禁用所有交互工具栏
-    fig_html = fig.to_html(
-        full_html=False,
-        config={
-            'staticPlot': False,  # 保持交互但禁用缩放
-            'scrollZoom': False,   # 禁用滚轮缩放
-            'displayModeBar': False,  # 完全隐藏工具栏
-            'responsive': True,
-            'doubleClick': False,   # 禁用双击
-            'showTips': False       # 不显示提示
-        }
-    )
-    
-    context = {'fig': fig_html}
-    return render(request, 'IESys_/week_expenditure.html', context)
 
-@login_required
-def month_ie(request):
-    """编写统计页面中的月收支"""
-    today = date.today()
-    cnt_day = today.day
-    total_days = calendar.monthrange(today.year, today.month)[1]
-    first_day = date(today.year, today.month, 1)
+    fig = px.bar(df, x='星期', y='支出',
+                 hover_data={'日期': True, '星期': False},
+                 color_discrete_sequence=['#f87171'])
 
-    total_income = IeSys.objects.filter(user=request.user).aggregate(total=Sum('income_amount'))['total'] or 0
-    total_expense = IeSys.objects.filter(user=request.user).aggregate(total=Sum('expenditure_amount'))['total'] or 0
-    total_balance = total_income - total_expense
-    
-    days = []
-    amount = []
-    cumulative = total_balance
-    
-    for i in range(total_days):
-        if i+1 > cnt_day:
-            continue
-        current_date = first_day + timedelta(days=i)
-        days.append(str(current_date.day))
-        
-        start, end = get_day_range(current_date)
-        objects = IeSys.objects.filter(user=request.user, date__gte=start, date__lte=end)
-        
-        daily_net = 0
-        for obj in objects:
-            daily_net += (obj.income_amount or 0) - (obj.expenditure_amount or 0)
-        
-        cumulative += daily_net
-        amount.append(cumulative)
-    
-    data = pd.DataFrame({
-        '日': days,
-        '总收支': amount
-    })
-    fig = px.bar(data, x='日', y='总收支', title=str(today.month)+'月总收支统计')
-    fig.update_xaxes(title_text=str(today.month)+'月')
-    
-    # 自定义悬停文本 - 完全去掉"日=数值"模式
     fig.update_traces(
-        hovertemplate='<b>%{x}日</b><br>总收支: %{y:.2f} 元<extra></extra>',
-        # 如果你只想要纯数字，用这个：
-        # hovertemplate='%{y:.2f} 元<extra></extra>',
+        marker=dict(
+            color=bar_colors,
+            line=dict(color='#dc2626', width=1.2),
+        ),
+        hovertemplate=(
+            '<b style="font-size:15px">%{customdata[0]}  %{x}</b><br>'
+            '支出: <b>¥ %{y:.2f}</b>'
+            '<extra></extra>'
+        ),
         hoverlabel=dict(
-            bgcolor="white",
-            font_size=14,
-            font_family="Microsoft YaHei",
-            bordercolor="gray"
-        )
+            bgcolor='#ffffff',
+            bordercolor='#ef4444',
+            font=dict(size=15, family='Microsoft YaHei, sans-serif', color='#1e293b'),
+            align='left',
+            namelength=-1,
+        ),
+        text=amounts,
+        texttemplate='%{text:.2f}',
+        textposition='outside',
+        textfont=dict(size=12, family='Microsoft YaHei, sans-serif', color='#64748b'),
+        width=0.6,
     )
-    
-    # 完全禁用缩放
+
+    fig.update_xaxes(
+        title=None,
+        fixedrange=True,
+        tickfont=dict(size=13, family='Microsoft YaHei, sans-serif', color='#475569'),
+        gridcolor='rgba(0,0,0,0)',
+    )
+    fig.update_yaxes(
+        title=dict(text='支出 (元)', font=dict(size=13, family='Microsoft YaHei, sans-serif', color='#94a3b8')),
+        fixedrange=True,
+        tickfont=dict(size=12, family='Microsoft YaHei, sans-serif', color='#94a3b8'),
+        gridcolor='#f1f5f9',
+        griddash='dot',
+        zeroline=True,
+        zerolinecolor='#e2e8f0',
+    )
+
     fig.update_layout(
         dragmode=False,
-        xaxis=dict(fixedrange=True),
-        yaxis=dict(fixedrange=True),
         hovermode='x unified',
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
+        autosize=True,
+        margin=dict(t=70, l=10, r=20, b=30),
+        title=dict(
+            text='本周支出统计',
+            font=dict(size=22, family='Microsoft YaHei, sans-serif', color='#1e293b'),
+            x=0.5, xanchor='center',
+        ),
+        showlegend=False,
+        bargap=0.35,
     )
-    
-    # 添加 y=0 参考线（可选，让正负值更明显）
-    fig.add_hline(y=0, line_dash="dash", line_color="red", opacity=0.5)
-    
-    # 隐藏工具栏
+
     fig_html = fig.to_html(
         full_html=False,
         config={
@@ -306,10 +415,127 @@ def month_ie(request):
             'displayModeBar': False,
             'responsive': True,
             'doubleClick': False,
-            'showTips': False
+            'showTips': False,
+            'displaylogo': False,
         }
     )
-    
+
+    context = {'fig': fig_html}
+    return render(request, 'IESys_/week_expenditure.html', context)
+
+@login_required
+def month_ie(request):
+    """编写统计页面中的月收支"""
+    today = timezone.localtime(timezone.now()).date()
+    cnt_day = today.day
+    total_days = calendar.monthrange(today.year, today.month)[1]
+    first_day = date(today.year, today.month, 1)
+
+    days = []
+    amounts = []
+    cumulative = 0
+
+    for i in range(total_days):
+        if i + 1 > cnt_day:
+            continue
+        current_date = first_day + timedelta(days=i)
+        days.append(str(current_date.day))
+
+        start, end = get_day_range(current_date)
+        objects = IeSys.objects.filter(user=request.user, date__gte=start, date__lte=end)
+
+        daily_net = 0
+        for obj in objects:
+            daily_net += (obj.income_amount or 0) - (obj.expenditure_amount or 0)
+
+        cumulative += daily_net
+        amounts.append(cumulative)
+
+    # 根据正负着色
+    bar_colors = ['#10b981' if v >= 0 else '#ef4444' for v in amounts]
+    # 最后一天(今天)用更深色高亮
+    if bar_colors:
+        last_color = '#059669' if amounts[-1] >= 0 else '#dc2626'
+        bar_colors[-1] = last_color
+
+    df = pd.DataFrame({
+        '日': days,
+        '累计结余': amounts,
+    })
+
+    fig = px.bar(df, x='日', y='累计结余')
+
+    fig.update_traces(
+        marker=dict(
+            color=bar_colors,
+            line=dict(color=['#047857' if v >= 0 else '#b91c1c' for v in amounts], width=1.2),
+        ),
+        hovertemplate=(
+            '<b style="font-size:15px">%{x}日</b><br>'
+            '累计结余: <b>¥ %{y:+,.2f}</b>'
+            '<extra></extra>'
+        ),
+        hoverlabel=dict(
+            bgcolor='#ffffff',
+            bordercolor='#64748b',
+            font=dict(size=15, family='Microsoft YaHei, sans-serif', color='#1e293b'),
+            align='left',
+            namelength=-1,
+        ),
+        text=amounts,
+        texttemplate='%{text:+,.2f}',
+        textposition='outside',
+        textfont=dict(size=11, family='Microsoft YaHei, sans-serif', color='#64748b'),
+        width=0.65,
+    )
+
+    fig.update_xaxes(
+        title=dict(text=f'{today.month}月', font=dict(size=13, family='Microsoft YaHei, sans-serif', color='#94a3b8')),
+        fixedrange=True,
+        tickfont=dict(size=12, family='Microsoft YaHei, sans-serif', color='#475569'),
+        gridcolor='rgba(0,0,0,0)',
+    )
+    fig.update_yaxes(
+        title=dict(text='结余 (元)', font=dict(size=13, family='Microsoft YaHei, sans-serif', color='#94a3b8')),
+        fixedrange=True,
+        tickfont=dict(size=12, family='Microsoft YaHei, sans-serif', color='#94a3b8'),
+        gridcolor='#f1f5f9',
+        griddash='dot',
+        zeroline=True,
+        zerolinecolor='#e2e8f0',
+    )
+
+    fig.add_hline(y=0, line_dash='dash', line_color='#94a3b8', opacity=0.6)
+
+    fig.update_layout(
+        dragmode=False,
+        hovermode='x unified',
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        autosize=True,
+        margin=dict(t=70, l=10, r=20, b=30),
+        title=dict(
+            text=f'{today.month}月累计结余',
+            font=dict(size=22, family='Microsoft YaHei, sans-serif', color='#1e293b'),
+            x=0.5, xanchor='center',
+        ),
+        showlegend=False,
+        bargap=0.3,
+    )
+
+    fig_html = fig.to_html(
+        full_html=False,
+        config={
+            'staticPlot': False,
+            'scrollZoom': False,
+            'displayModeBar': False,
+            'responsive': True,
+            'doubleClick': False,
+            'showTips': False,
+            'displaylogo': False,
+        }
+    )
+
     context = {'fig': fig_html}
     return render(request, 'IESys_/month_ie.html', context)
 
