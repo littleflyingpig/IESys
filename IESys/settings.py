@@ -162,5 +162,20 @@ else:
     ALLOWED_HOSTS = ['*'] 
     CSRF_TRUSTED_ORIGINS = []
 
+# 缓存配置：Railway 用文件缓存，本地开发用内存缓存
+if os.environ.get('DATABASE_URL'):
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+            'LOCATION': '/tmp/iesys_cache',
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
+
 #如果用户未登录则重定向到登录页面
 LOGIN_URL = 'accounter:login'

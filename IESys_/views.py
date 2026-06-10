@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db.models import Sum
 from django.db.models.functions import TruncDate
+from django.core.cache import cache
 from .form import IeSysForm
 from .models import IeSys
 
@@ -14,6 +15,24 @@ from datetime import date, timedelta, datetime
 import pandas as pd
 import plotly.express as px
 # Create your views here.
+
+# ---------------------------------------------------------------------------
+# 图表缓存工具
+# ---------------------------------------------------------------------------
+
+def _chart_cache_key(user_id, view_name, date_slug):
+    """生成图表缓存键：view_name:user_id:v{version}:date_slug"""
+    version = cache.get(f'chart_v:{user_id}', 1)
+    return f'chart:{view_name}:{user_id}:v{version}:{date_slug}'
+
+def bump_chart_cache(user_id):
+    """用户新增/修改数据后调用，使该用户所有图表缓存失效"""
+    try:
+        cache.incr(f'chart_v:{user_id}')
+    except ValueError:
+        cache.set(f'chart_v:{user_id}', 2, timeout=None)
+
+CACHE_TIMEOUT = 86400  # 24 小时（正常会被版本号自然失效）
 
 def get_day_range(target_date):
     """获取某一天的开始和结束时间"""
@@ -77,6 +96,7 @@ def income(request):
             form.instance.user = request.user
             form.save()
             messages.success(request, '收入添加成功！')
+            bump_chart_cache(request.user.id)
             return redirect('IESys_:index')
     context = {'form': form}
     return render(request, 'IESys_/income.html', context)
@@ -92,6 +112,7 @@ def expenditure(request):
             form.instance.user = request.user
             form.save()
             messages.success(request, "支出添加成功！")
+            bump_chart_cache(request.user.id)
             return redirect('IESys_:index')
     context = {'form': form}
     return render(request, 'IESys_/expenditure.html', context)
@@ -100,6 +121,11 @@ def expenditure(request):
 def income_detail(request):
     """编写收入的详细页面视图"""
     today = timezone.localtime(timezone.now()).date()
+    date_slug = today.isoformat()
+    cache_key = _chart_cache_key(request.user.id, 'income_detail', date_slug)
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return render(request, 'IESys_/income_detail.html', cached)
     start, end = get_day_range(today)
     objects = IeSys.objects.filter(user=request.user, income_amount__gt=0, date__gte=start, date__lte=end)
     if objects:
@@ -198,17 +224,24 @@ def income_detail(request):
             include_plotlyjs='cdn'
         )
         
-        combined = zip(ic, ac, tc)
+        combined = list(zip(ic, ac, tc))
         context = {'flag': 1, 'fig': fig_html, 'combined': combined, 'total_amount': total_amount}
+        cache.set(cache_key, context, CACHE_TIMEOUT)
         return render(request, 'IESys_/income_detail.html', context)
     else:
         context = {'flag': 0}
+        cache.set(cache_key, context, CACHE_TIMEOUT)
         return render(request, 'IESys_/income_detail.html', context)
-    
+
 @login_required
 def expenditure_detail(request):
     """"编写支出的详细页面视图"""
     today = timezone.localtime(timezone.now()).date()
+    date_slug = today.isoformat()
+    cache_key = _chart_cache_key(request.user.id, 'expenditure_detail', date_slug)
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return render(request, 'IESys_/expenditure_detail.html', cached)
     start, end = get_day_range(today)
     objects = IeSys.objects.filter(user=request.user, expenditure_amount__gt=0, date__gte=start, date__lte=end)
     if objects:
@@ -307,17 +340,24 @@ def expenditure_detail(request):
             include_plotlyjs='cdn'
         )
         
-        combined = zip(ed, ad, td)
+        combined = list(zip(ed, ad, td))
         context = {'flag': 1, 'fig': fig_html, 'combined': combined, 'total_amount': total_amount}
+        cache.set(cache_key, context, CACHE_TIMEOUT)
         return render(request, 'IESys_/expenditure_detail.html', context)
     else:
         context = {'flag': 0}
+        cache.set(cache_key, context, CACHE_TIMEOUT)
         return render(request, 'IESys_/expenditure_detail.html', context)
-    
+
 @login_required
 def week_expenditure(request):
     """编写统计页面中的周统计"""
     today = timezone.localtime(timezone.now()).date()
+    date_slug = today.strftime('%Y-W%W')
+    cache_key = _chart_cache_key(request.user.id, 'week', date_slug)
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return render(request, 'IESys_/week_expenditure.html', cached)
     monday = today - timedelta(days=today.weekday())
     sunday = monday + timedelta(days=6)
     week_labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
@@ -426,12 +466,18 @@ def week_expenditure(request):
     )
 
     context = {'fig': fig_html}
+    cache.set(cache_key, context, CACHE_TIMEOUT)
     return render(request, 'IESys_/week_expenditure.html', context)
 
 @login_required
 def month_ie(request):
     """编写统计页面中的月收支"""
     today = timezone.localtime(timezone.now()).date()
+    date_slug = today.strftime('%Y-%m')
+    cache_key = _chart_cache_key(request.user.id, 'month', date_slug)
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return render(request, 'IESys_/month_ie.html', cached)
     cnt_day = today.day
     first_day = date(today.year, today.month, 1)
 
@@ -544,15 +590,23 @@ def month_ie(request):
     )
 
     context = {'fig': fig_html}
+    cache.set(cache_key, context, CACHE_TIMEOUT)
     return render(request, 'IESys_/month_ie.html', context)
 
 @login_required
 def total_detail(request):
     """编写首页的详情页面"""
-    result = IeSys.objects.filter(user=request.user).annotate(oneday=TruncDate('date')).values('oneday').annotate(
+    date_slug = 'all'
+    cache_key = _chart_cache_key(request.user.id, 'total_detail', date_slug)
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return render(request, 'IESys_/total_detail.html', cached)
+
+    result = list(IeSys.objects.filter(user=request.user).annotate(oneday=TruncDate('date')).values('oneday').annotate(
         expenditure = Sum('expenditure_amount'),
         income = Sum('income_amount')
-    ).order_by('-oneday')
+    ).order_by('-oneday'))
 
     context = {'result': result}
+    cache.set(cache_key, context, CACHE_TIMEOUT)
     return render(request, 'IESys_/total_detail.html', context)
