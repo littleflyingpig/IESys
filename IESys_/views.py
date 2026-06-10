@@ -192,18 +192,53 @@ def week_expenditure(request):
         '支出': amount
     })
     fig = px.bar(df, x='本周', y='支出', title='周支出统计')
-    fig = fig.to_html(full_html=False)
-    context = {'fig': fig}
+    
+    # 自定义悬停文本
+    fig.update_traces(
+        hovertemplate='<b>%{x}</b><br>支出: %{y:.2f} 元<extra></extra>',
+        # 或者更简洁的版本：
+        # hovertemplate='%{y:.2f} 元<extra></extra>',
+        hoverlabel=dict(
+            bgcolor="white",
+            font_size=14,
+            font_family="Microsoft YaHei"
+        )
+    )
+    
+    # 完全禁用缩放，固定轴范围
+    fig.update_layout(
+        dragmode=False,  # 禁用拖拽
+        xaxis=dict(fixedrange=True),  # 固定 x 轴，禁止缩放/平移
+        yaxis=dict(fixedrange=True),  # 固定 y 轴，禁止缩放/平移
+        hovermode='x unified',  # 统一悬停模式
+        # 可选：美化布局
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+    )
+    
+    # 转换为 HTML，禁用所有交互工具栏
+    fig_html = fig.to_html(
+        full_html=False,
+        config={
+            'staticPlot': False,  # 保持交互但禁用缩放
+            'scrollZoom': False,   # 禁用滚轮缩放
+            'displayModeBar': False,  # 完全隐藏工具栏
+            'responsive': True,
+            'doubleClick': False,   # 禁用双击
+            'showTips': False       # 不显示提示
+        }
+    )
+    
+    context = {'fig': fig_html}
     return render(request, 'IESys_/week_expenditure.html', context)
 
 @login_required
 def month_ie(request):
     """编写统计页面中的月收支"""
     today = date.today()
+    cnt_day = today.day
     total_days = calendar.monthrange(today.year, today.month)[1]
     first_day = date(today.year, today.month, 1)
-
-    # total_balance = IeSys.get_total_balance()
 
     total_income = IeSys.objects.filter(user=request.user).aggregate(total=Sum('income_amount'))['total'] or 0
     total_expense = IeSys.objects.filter(user=request.user).aggregate(total=Sum('expenditure_amount'))['total'] or 0
@@ -214,6 +249,8 @@ def month_ie(request):
     cumulative = total_balance
     
     for i in range(total_days):
+        if i+1 > cnt_day:
+            continue
         current_date = first_day + timedelta(days=i)
         days.append(str(current_date.day))
         
@@ -233,8 +270,47 @@ def month_ie(request):
     })
     fig = px.bar(data, x='日', y='总收支', title=str(today.month)+'月总收支统计')
     fig.update_xaxes(title_text=str(today.month)+'月')
-    fig = fig.to_html(full_html=False)
-    context = {'fig': fig}
+    
+    # 自定义悬停文本 - 完全去掉"日=数值"模式
+    fig.update_traces(
+        hovertemplate='<b>%{x}日</b><br>总收支: %{y:.2f} 元<extra></extra>',
+        # 如果你只想要纯数字，用这个：
+        # hovertemplate='%{y:.2f} 元<extra></extra>',
+        hoverlabel=dict(
+            bgcolor="white",
+            font_size=14,
+            font_family="Microsoft YaHei",
+            bordercolor="gray"
+        )
+    )
+    
+    # 完全禁用缩放
+    fig.update_layout(
+        dragmode=False,
+        xaxis=dict(fixedrange=True),
+        yaxis=dict(fixedrange=True),
+        hovermode='x unified',
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+    )
+    
+    # 添加 y=0 参考线（可选，让正负值更明显）
+    fig.add_hline(y=0, line_dash="dash", line_color="red", opacity=0.5)
+    
+    # 隐藏工具栏
+    fig_html = fig.to_html(
+        full_html=False,
+        config={
+            'staticPlot': False,
+            'scrollZoom': False,
+            'displayModeBar': False,
+            'responsive': True,
+            'doubleClick': False,
+            'showTips': False
+        }
+    )
+    
+    context = {'fig': fig_html}
     return render(request, 'IESys_/month_ie.html', context)
 
 @login_required
