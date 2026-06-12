@@ -353,7 +353,7 @@ def expenditure_detail(request):
 def week_expenditure(request):
     """编写统计页面中的周统计"""
     today = timezone.localtime(timezone.now()).date()
-    date_slug = today.strftime('%Y-W%W')
+    date_slug = today.isoformat()
     cache_key = _chart_cache_key(request.user.id, 'week', date_slug)
     cached = cache.get(cache_key)
     if cached is not None:
@@ -462,7 +462,8 @@ def week_expenditure(request):
             'doubleClick': False,
             'showTips': False,
             'displaylogo': False,
-        }
+        },
+        include_plotlyjs='cdn'
     )
 
     context = {'fig': fig_html}
@@ -473,7 +474,7 @@ def week_expenditure(request):
 def month_ie(request):
     """编写统计页面中的月收支"""
     today = timezone.localtime(timezone.now()).date()
-    date_slug = today.strftime('%Y-%m')
+    date_slug = today.isoformat()
     cache_key = _chart_cache_key(request.user.id, 'month', date_slug)
     cached = cache.get(cache_key)
     if cached is not None:
@@ -586,7 +587,8 @@ def month_ie(request):
             'doubleClick': False,
             'showTips': False,
             'displaylogo': False,
-        }
+        },
+        include_plotlyjs='cdn'
     )
 
     context = {'fig': fig_html}
