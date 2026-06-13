@@ -6,12 +6,14 @@ from django.utils import timezone
 from django.db.models import Sum
 from django.db.models.functions import TruncDate
 from django.core.cache import cache
+from django.views.decorators.cache import never_cache
 from .form import IeSysForm
 from .models import IeSys
 
 
 from collections import defaultdict
 from datetime import date, timedelta, datetime
+import time
 import pandas as pd
 import plotly.express as px
 # Create your views here.
@@ -21,18 +23,18 @@ import plotly.express as px
 # ---------------------------------------------------------------------------
 
 def _chart_cache_key(user_id, view_name, date_slug):
-    """生成图表缓存键：view_name:user_id:v{version}:date_slug"""
-    version = cache.get(f'chart_v:{user_id}', 1)
+    """生成图表缓存键。版本号不存在时默认为 0。"""
+    version = cache.get(f'chart_v:{user_id}', 0)
     return f'chart:{view_name}:{user_id}:v{version}:{date_slug}'
 
 def bump_chart_cache(user_id):
-    """用户新增/修改数据后调用，使该用户所有图表缓存失效"""
-    try:
-        cache.incr(f'chart_v:{user_id}')
-    except ValueError:
-        cache.set(f'chart_v:{user_id}', 2, timeout=None)
+    """用户新增/修改数据后调用，使该用户所有图表缓存失效。
 
-CACHE_TIMEOUT = 86400  # 24 小时（正常会被版本号自然失效）
+    用时间戳作为新版本号，避免 incr 在多后端下的可靠性问题。
+    """
+    cache.set(f'chart_v:{user_id}', int(time.time()), timeout=None)
+
+CACHE_TIMEOUT = 86400  # 24 小时（兜底，正常会被版本号自然淘汰）
 
 def get_day_range(target_date):
     """获取某一天的开始和结束时间"""
@@ -117,6 +119,7 @@ def expenditure(request):
     context = {'form': form}
     return render(request, 'IESys_/expenditure.html', context)
 
+@never_cache
 @login_required
 def income_detail(request):
     """编写收入的详细页面视图"""
@@ -233,6 +236,7 @@ def income_detail(request):
         cache.set(cache_key, context, CACHE_TIMEOUT)
         return render(request, 'IESys_/income_detail.html', context)
 
+@never_cache
 @login_required
 def expenditure_detail(request):
     """"编写支出的详细页面视图"""
@@ -349,6 +353,7 @@ def expenditure_detail(request):
         cache.set(cache_key, context, CACHE_TIMEOUT)
         return render(request, 'IESys_/expenditure_detail.html', context)
 
+@never_cache
 @login_required
 def week_expenditure(request):
     """编写统计页面中的周统计"""
@@ -470,6 +475,7 @@ def week_expenditure(request):
     cache.set(cache_key, context, CACHE_TIMEOUT)
     return render(request, 'IESys_/week_expenditure.html', context)
 
+@never_cache
 @login_required
 def month_ie(request):
     """编写统计页面中的月收支"""
@@ -595,6 +601,7 @@ def month_ie(request):
     cache.set(cache_key, context, CACHE_TIMEOUT)
     return render(request, 'IESys_/month_ie.html', context)
 
+@never_cache
 @login_required
 def total_detail(request):
     """编写首页的详情页面"""
